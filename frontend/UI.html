@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Data Vault</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: url('/home/barath/Documents/21PC13_AMCS_HACKATHON/1920x1080') no-repeat center center fixed;
+            background-size: cover;
+            color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 3rem auto;
+            padding: 2rem;
+            background: rgba(40, 40, 60, 0.9);
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            animation: fadeIn 1s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h1 {
+            text-align: center;
+            color: #50c878;
+            font-size: 2.5rem;
+        }
+        .upload-section, .category-section {
+            margin: 1.5rem 0;
+        }
+        .upload-section label, .category-section label {
+            display: block;
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+        .upload-section input[type="file"] {
+            border: 2px dashed #50c878;
+            border-radius: 10px;
+            padding: 1rem;
+            width: 100%;
+            background: #33334d;
+            color: #fff;
+            cursor: pointer;
+            text-align: center;
+        }
+        .category-section select {
+            width: 100%;
+            padding: 0.8rem;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background-color: #3a3a56;
+            color: #f3f3f3;
+        }
+        .file-list {
+            margin: 1rem 0;
+            padding: 0;
+            list-style: none;
+        }
+        .file-list li {
+            background: rgba(80, 200, 120, 0.1);
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .file-list li span {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        .file-list li button {
+            background-color: #50c878;
+            border: none;
+            color: white;
+            padding: 0.6rem 1.2rem;
+            font-size: 0.9rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .file-list li button:hover {
+            background-color: #45b06c;
+        }
+        .submit-btn {
+            display: block;
+            width: 100%;
+            background-color: #50c878;
+            color: white;
+            border: none;
+            padding: 1rem;
+            font-size: 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 1.5rem;
+        }
+        .submit-btn:hover {
+            background-color: #45b06c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Personal Data Vault</h1>
+
+        <div class="upload-section">
+            <label for="file-upload">Upload Sensitive Files</label>
+            <input type="file" id="file-upload" multiple>
+        </div>
+
+        <div class="category-section">
+            <label for="file-category">Categorize Files</label>
+            <select id="file-category">
+                <option value="financial">Financial Documents</option>
+                <option value="passwords">Passwords</option>
+                <option value="personal">Personal Files</option>
+            </select>
+        </div>
+
+        <ul class="file-list" id="file-list">
+            <!-- Dynamic list of uploaded files -->
+        </ul>
+
+        <button class="submit-btn" onclick="submitFiles()">Submit Files</button>
+    </div>
+
+    <script>
+        const fileUpload = document.getElementById('file-upload');
+        const fileCategory = document.getElementById('file-category');
+        const fileList = document.getElementById('file-list');
+
+        const uploadedFiles = [];
+
+        fileUpload.addEventListener('change', () => {
+            const files = Array.from(fileUpload.files);
+            files.forEach(file => {
+                const category = fileCategory.value;
+                uploadedFiles.push({ file, category });
+                renderFileList();
+            });
+            fileUpload.value = ""; // Clear the file input after selection
+        });
+
+        function renderFileList() {
+            fileList.innerHTML = '';
+            uploadedFiles.forEach((fileObj, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${fileObj.file.name} (${fileObj.category})</span>
+                                <button onclick="removeFile(${index})">Remove</button>`;
+                fileList.appendChild(li);
+            });
+        }
+
+        function removeFile(index) {
+            uploadedFiles.splice(index, 1);
+            renderFileList();
+        }
+
+        async function submitFiles() {
+            if (uploadedFiles.length === 0) {
+                alert('No files to submit!');
+                return;
+            }
+
+            const fileObj = uploadedFiles[0]; // Encrypt the first file as an example
+            const file = fileObj.file;
+
+            const reader = new FileReader();
+            reader.onload = async () => {
+                const fileContent = reader.result;
+
+                try {
+                    const response = await fetch('http://127.0.0.1:5000/encrypt', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ data: fileContent })
+                    });
+
+                    const result = await response.json();
+                    console.log('Encrypted Data:', result.encrypted_data);
+
+                    alert('File encrypted successfully! Check the backend for the encrypted data.');
+                } catch (error) {
+                    console.error('Encryption error:', error);
+                    alert('Failed to encrypt the file.');
+                }
+            };
+
+            reader.readAsText(file); // Read the file content
+        }
+    </script>
+</body>
+</html>

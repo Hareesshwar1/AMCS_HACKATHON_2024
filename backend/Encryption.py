@@ -6,18 +6,17 @@ import base64
 import pymysql
 import logging
 
-# Initialize Flask app
+# Initializing Flask app
 app = Flask(__name__)
 CORS(app)  # Enable CORS for cross-origin requests
 
-# Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Generate RSA keys
 private_key = RSA.generate(2048)
 public_key = private_key.publickey()
 
-# Database connection
+# connecting to DB
 db = pymysql.connect(
     host="localhost",
     user="root",
@@ -26,7 +25,7 @@ db = pymysql.connect(
     cursorclass=pymysql.cursors.DictCursor
 )
 
-# Encrypt function for binary data
+
 def encrypt_binary_data(data):
     """
     Encrypts binary data using RSA public key.
@@ -72,7 +71,7 @@ def encrypt_and_save():
         # Encrypt file data
         encrypted_data = encrypt_binary_data(file_data)
 
-        # Save to database
+        # Saving to database
         with db.cursor() as cursor:
             query = """
             INSERT INTO files (name, category, encrypted_data) 

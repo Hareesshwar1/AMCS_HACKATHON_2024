@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: 'Roboto', sans-serif;
-            background: url('/home/barath/Documents/21PC13_AMCS_HACKATHON/1920x1080') no-repeat center center fixed;
+            background: url('1920x1080.jpg') no-repeat center center fixed;
             background-size: cover;
             color: #f5f5f5;
             margin: 0;
@@ -119,6 +119,7 @@
         <div class="category-section">
             <label for="file-category">Categorize Files</label>
             <select id="file-category">
+                <option value="" disabled selected>Select a category</option>
                 <option value="financial">Financial Documents</option>
                 <option value="passwords">Passwords</option>
                 <option value="personal">Personal Files</option>
@@ -141,11 +142,18 @@
 
         fileUpload.addEventListener('change', () => {
             const files = Array.from(fileUpload.files);
+            const category = fileCategory.value;
+
+            if (!category) {
+                alert('Please select a category before uploading files.');
+                return;
+            }
+
             files.forEach(file => {
-                const category = fileCategory.value;
                 uploadedFiles.push({ file, category });
                 renderFileList();
             });
+
             fileUpload.value = ""; // Clear the file input after selection
         });
 
@@ -170,33 +178,44 @@
                 return;
             }
 
-            const fileObj = uploadedFiles[0]; // Encrypt the first file as an example
-            const file = fileObj.file;
+            for (const fileObj of uploadedFiles) {
+                const file = fileObj.file;
+                const category = fileObj.category;
 
-            const reader = new FileReader();
-            reader.onload = async () => {
-                const fileContent = reader.result;
+                const reader = new FileReader();
+                reader.onload = async () => {
+                    const fileContent = reader.result;  // Get the file content as ArrayBuffer
 
-                try {
-                    const response = await fetch('http://127.0.0.1:5000/encrypt', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ data: fileContent })
-                    });
+                    // Prepare the form data for submission
+                    const formData = new FormData();
+                    formData.append('file', new Blob([fileContent]));
+                    formData.append('category', category);
 
-                    const result = await response.json();
-                    console.log('Encrypted Data:', result.encrypted_data);
+                    try {
+                        const response = await fetch('http://127.0.0.1:5000/encrypt', {
+                            method: 'POST',
+                            body: formData,
+                        });
 
-                    alert('File encrypted successfully! Check the backend for the encrypted data.');
-                } catch (error) {
-                    console.error('Encryption error:', error);
-                    alert('Failed to encrypt the file.');
-                }
-            };
+                        const result = await response.json();
+                        if (response.ok) {
+                            console.log('Encrypted Data:', result.encrypted_data);
+                            alert(`File ${file.name} encrypted successfully!`);
+                        } else {
+                            throw new Error(result.error || 'Unknown error');
+                        }
+                    } catch (error) {
+                        console.error('Encryption error:', error);
+                        alert(`Failed to encrypt the file: ${file.name}`);
+                    }
+                };
 
-            reader.readAsText(file); // Read the file content
+                reader.readAsArrayBuffer(file);  // Ensure file content is read as ArrayBuffer
+            }
+
+            // Clear the list after submission
+            uploadedFiles.length = 0;
+            renderFileList();
         }
     </script>
 </body>
